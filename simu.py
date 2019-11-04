@@ -3,6 +3,9 @@ import pandas as pd
 import random
 import pprint
 import warnings
+import pickle
+
+DBG = 0
 def node_seq_number():
     node_seq_number.counter += 1
     return node_seq_number.counter
@@ -56,25 +59,32 @@ class Cluster():
 
 
     def add_n_nodes(self, number_of_new_nodes):
-        for i in range(number_of_new_nodes):
-            # shold atomic      
+        for j in range(number_of_new_nodes):
+
             new_node_id = node_seq_number()
 
             left = self.cluster_nodes
-            for i in range(self.p):
+            runout_sample = False
+            for j in range(self.p):
                 new_copyset_id = copyset_seq_number()
 
                 self.current_copysets.add(new_copyset_id)
-                if len(left)>= self.r-1:
+                if not runout_sample:
+                    if len(left)>= self.r-1:
+                        chosen_siblings = set(random.sample(left, k=self.r-1))
+
+
+                        left = left - chosen_siblings
+                    # case where ideal s > n
+                    else:
+                        runout_sample = True
+                        chosen_siblings = left
+                        temp_left = self.cluster_nodes - left
+                        chosen_siblings += set(random.sample(temp_left, k=(self.r-1 - len(chosen_siblings))))
+                else:
+
                     chosen_siblings = set(random.sample(left, k=self.r-1))
 
-
-                    left = left - chosen_siblings
-                # case where ideal s > n
-                else:
-                    chosen_siblings = left
-                    temp_left = self.cluster_nodes - left
-                    chosen_siblings += set(random.sample(temp_left, k=(self.r-1 - len(chosen_siblings))))
                 new_nodes_df = pd.DataFrame({"copyset_id": [new_copyset_id]*self.r, "node_id": [new_node_id] + list(chosen_siblings)})
                 self.copyset_node_relationship = self.copyset_node_relationship.append(new_nodes_df, ignore_index=True)
 
@@ -160,12 +170,15 @@ class Cluster():
         copyset_coverage = self.copyset_count_by_node()
         for idx, row in copyset_coverage.iterrows():
             if row["copyset_cnt"] > self.p:
-                print("\noverscattered node: %d %d > %d" % (row["node_id"], row["copyset_cnt"], self.p))
+                if DBG:
+                    print("\noverscattered node: %d %d > %d" % (row["node_id"], row["copyset_cnt"], self.p))
                 all_copysets = self.copyset_node_relationship.loc[self.copyset_node_relationship["node_id"] == row["node_id"]]
                 rm_idx = random.sample(list(all_copysets.index), row["copyset_cnt"] - self.p)
-                print("before remove table size %d" % self.copyset_node_relationship.shape[0])
+                if DBG:
+                    print("before remove table size %d" % self.copyset_node_relationship.shape[0])
                 self.copyset_node_relationship.drop(rm_idx,inplace=True)
-                print("after remove table size %d" % self.copyset_node_relationship.shape[0])
+                if DBG:
+                    print("after remove table size %d" % self.copyset_node_relationship.shape[0])
 
 
     def merge_copyset(self):
@@ -188,34 +201,38 @@ class Cluster():
         #
 
         for head, row in halffull_cs.iterrows():
-            print("\n\n")
-            print(head)
+            print("\n")
+            print("moving headtail (%d, %d)" % (head, tail1))
             # merge biggest with smallest cs
-            tail0 = tail1
-            if tail1 <= head:
+            print("left_node_cnt %d" % left_node_cnt)
+            if tail1 <= head + 1:# or (left_node_cnt==0 and tail1 -head ==2):
                 print("head tail meet here, when head++,\nNo migration, keep last copyset portion nodes")
-
+                # TODO merge  last copyset
                 break
+
+            tail0 = tail1
+
 
             merged_size = row["node_cnt"] + left_node_cnt
             if merged_size >= self.r:
                 left_node_cnt = merged_size - self.r
                 nodes_merged_at_tail0 = self.r - row["node_cnt"]
                 nodes_merged_at_tail1 = self.r - row["node_cnt"]
-                print(
-                    "head copyset: {copyset}\n"
-                    "original size: {node_cnt}\n"
-                    "tail0 copyset: {tail0}\n"
-                    "tail0 nodes mig size: {tail0_n}\n"
-                    "tail1 copyset: {tail0}\n"
-                    "tail1 nodes mig size: {tail1_n}\n"
-                    .format( copyset= row["copyset_id"], \
-                     node_cnt = row["node_cnt"], \
-                    tail0=halffull_cs.loc[tail0]["copyset_id"],\
-                      tail0_n = nodes_merged_at_tail0, \
-                    tail1 = halffull_cs.loc[tail1]["copyset_id"],\
-                    tail1_n = nodes_merged_at_tail1)
-                )
+                if DBG:
+                    print(
+                        "head copyset: {copyset}\n"
+                        "original size: {node_cnt}\n"
+                        "tail0 copyset: {tail0}\n"
+                        "tail0 nodes mig size: {tail0_n}\n"
+                        "tail1 copyset: {tail1}\n"
+                        "tail1 nodes mig size: {tail1_n}\n"
+                        .format( copyset= row["copyset_id"], \
+                         node_cnt = row["node_cnt"], \
+                        tail0=halffull_cs.loc[tail0]["copyset_id"],\
+                          tail0_n = nodes_merged_at_tail0, \
+                        tail1 = halffull_cs.loc[tail1]["copyset_id"],\
+                        tail1_n = nodes_merged_at_tail1)
+                    )
                 # print(row["copyset_id"], row["node_cnt"], halffull_cs.loc[tail0]["copyset_id"],
                 #       nodes_merged_at_tail0, halffull_cs.loc[tail1]["copyset_id"],nodes_merged_at_tail1)
 
@@ -226,30 +243,33 @@ class Cluster():
                 continue
 
             while merged_size < self.r:
-
-                tail1 -= 1
-                merged_size += halffull_cs.loc[tail1]["node_cnt"]
-                if tail1 <= head:
+                if tail1-1 <= head:
                     print("head tail meet here, when tail--")
                     is_tail_head_met = True
                     break
+                tail1 -= 1
+                print("moving headtail (%d, %d)" % (head, tail1))
+
+                merged_size += halffull_cs.loc[tail1]["node_cnt"]
+
 
             if is_tail_head_met:
                 # print(row["copyset_id"], row["node_cnt"], tail0, nodes_merged_at_tail0, -1, -1)
-                print(
-                    "head copyset: {copyset}\n"
-                    "original size: {node_cnt}\n"
-                    "tail0 copyset: {tail0}\n"
-                    "tail0 nodes mig size: {tail0_n}\n"
-                    "tail1 copyset: {tail0}\n"
-                    "tail1 nodes mig size: {tail1_n}\n"
-                    .format( copyset= row["copyset_id"], \
-                     node_cnt = row["node_cnt"], \
-                    tail0=halffull_cs.loc[tail0]["copyset_id"],\
-                      tail0_n = nodes_merged_at_tail0, \
-                    tail1 = -1,\
-                    tail1_n = -1)
-                )
+                if DBG:
+                    print(
+                        "head copyset: {copyset}\n"
+                        "original size: {node_cnt}\n"
+                        "tail0 copyset: {tail0}\n"
+                        "tail0 nodes mig size: {tail0_n}\n"
+                        "tail1 copyset: {tail1}\n"
+                        "tail1 nodes mig size: {tail1_n}\n"
+                        .format( copyset= row["copyset_id"], \
+                         node_cnt = row["node_cnt"], \
+                        tail0=halffull_cs.loc[tail0]["copyset_id"],\
+                          tail0_n = nodes_merged_at_tail0, \
+                        tail1 = -1,\
+                        tail1_n = -1)
+                    )
 
                 print("last merged copyset size %d" % merged_size)
                 self.update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
@@ -260,24 +280,26 @@ class Cluster():
             nodes_merged_at_tail0 = left_node_cnt
             left_node_cnt = merged_size - self.r
             nodes_merged_at_tail1 = halffull_cs.loc[tail1]["node_cnt"] - left_node_cnt
-
+            if DBG:
             # print(row["copyset_id"], row["node_cnt"], tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
-            print(
-                "head copyset: {copyset}\n"
-                "original size: {node_cnt}\n"
-                "tail0 copyset: {tail0}\n"
-                "tail0 nodes mig size: {tail0_n}\n"
-                "tail1 copyset: {tail0}\n"
-                "tail1 nodes mig size: {tail1_n}\n"
-                    .format(copyset=row["copyset_id"], \
-                            node_cnt=row["node_cnt"], \
-                            tail0=halffull_cs.loc[tail0]["copyset_id"], \
-                            tail0_n=nodes_merged_at_tail0, \
-                            tail1=halffull_cs.loc[tail1]["copyset_id"], \
-                            tail1_n=nodes_merged_at_tail1)
-            )
+                print(
+                    "head copyset: {copyset}\n"
+                    "original size: {node_cnt}\n"
+                    "tail0 copyset: {tail0}\n"
+                    "tail0 nodes mig size: {tail0_n}\n"
+                    "tail1 copyset: {tail1}\n"
+                    "tail1 nodes mig size: {tail1_n}\n"
+                        .format(copyset=row["copyset_id"], \
+                                node_cnt=row["node_cnt"], \
+                                tail0=halffull_cs.loc[tail0]["copyset_id"], \
+                                tail0_n=nodes_merged_at_tail0, \
+                                tail1=halffull_cs.loc[tail1]["copyset_id"], \
+                                tail1_n=nodes_merged_at_tail1)
+                )
             self.update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
                                                   tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
+
+
 
         print("merge plan ")
         pprint.pprint(copyset_migration_mapping)
@@ -294,7 +316,7 @@ class Cluster():
                 mig_node_idx = set(mig_node.index)
                 for dest,node_size in dest_cs.items():
                     mig_grp = random.sample(mig_node_idx,node_size)
-                    self.copyset_node_relationship.loc[mig_grp, "node_id"] = dest
+                    self.copyset_node_relationship.loc[mig_grp, "copyset_id"] = dest
                     mig_node_idx  = mig_node_idx - set(mig_grp)
 
 
@@ -373,11 +395,16 @@ def init_random_copyset(r, n, s):
 
 
 if __name__ == "__main__":
-    CS_3_20_4 = init_random_copyset(5, 40, 7)
+    r = 5
+    s = 8
+    n =40
+    CS_3_20_4 = init_random_copyset(r, n, s)
     # c = Cluster([[1,2,3],[2,3,4],[3,4,5],
     #             [4,5,6],[5,6,1],[6,1,2],
     #             [1,3,5],[2,4,6]])
-    c = Cluster(CS_3_20_4)
+    # ff = open("CS_3_20_4.pkl", 'rb')
+    # CS_3_20_4 = pickle.load(ff)
+    c = Cluster(CS_3_20_4,r=r,s=s)
     print(c.copyset_node_relationship)
 
     print("init copyset_node_relationship size %d" % len(c.copyset_node_relationship))
@@ -431,7 +458,30 @@ if __name__ == "__main__":
     print("\n\n\nnode_count_by_copyset")
     print(c.node_count_by_copyset())
 
+
+
     c.node_leave_copyset()
+
+    print("\nbefore merge: node_count_by_copyset")
+    print(c.node_count_by_copyset())
+    print(c.current_copysets)
+
     c.merge_copyset()
+
+    print("\nafter merge: node_count_by_copyset")
+    print(c.node_count_by_copyset())
+
+    print(c.current_copysets)
+    print("\n\n\ncopyset_count_by_node")
+    print(c.copyset_count_by_node())
+
+    print("\n\n\nnode_count_by_copyset")
+    print(c.node_count_by_copyset())
+
+
+    print("\n\n\nscatter_width_by_node")
+    print(c.scatter_width_by_node())
+
+
     print("bye~")
 

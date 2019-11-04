@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d93b854a-968d-4466-9208-b06e29ef94f0" name="Default Changelist" comment="" />
+    <list default="true" id="d93b854a-968d-4466-9208-b06e29ef94f0" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/simu.py" beforeDir="false" afterPath="$PROJECT_DIR$/simu.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,8 +15,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/simu.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="152">
-              <caret line="228" lean-forward="true" selection-start-line="228" selection-end-line="228" />
+            <state relative-caret-position="295">
+              <caret line="473" selection-start-line="473" selection-end-line="473" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -71,16 +73,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>sample</find>
-      <find>new_node_siblings</find>
-      <find>add</find>
-      <find>r add n new nod</find>
-      <find>ew nodes,  copyset_node_relationsh</find>
-      <find>index</find>
-      <find>moved node_i</find>
-      <find>new node id joi</find>
-      <find>set_count_by_no</find>
-      <find>random</find>
       <find>node_count</find>
       <find>__</find>
       <find>not</find>
@@ -94,13 +86,23 @@
       <find>pprint.p</find>
       <find>put_node_size_in_migration_mapping</find>
       <find>update_copyset_migration_mapping</find>
-      <find>last merged copyset size</find>
       <find>ail0 c</find>
       <find>head tail</find>
       <find>ead tail meet here,</find>
       <find>ead tail meet here</find>
       <find>head tail meet he</find>
+      <find>last merged copyset size</find>
+      <find>ail1 copyset: {ta</find>
+      <find>moving headtail</find>
       <find>left_node_cnt</find>
+      <find>left_node</find>
+      <find>de_count_by_copys</find>
+      <find>init_random_copyset</find>
+      <find>halffull</find>
+      <find>&quot;head copyset: {cop</find>
+      <find>print</find>
+      <find>{</find>
+      <find>moving headtail</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -206,24 +208,24 @@
       <updated>1571319461094</updated>
       <workItem from="1571319464828" duration="738000" />
       <workItem from="1571454269465" duration="6866000" />
-      <workItem from="1572806588728" duration="41612000" />
+      <workItem from="1572806588728" duration="46389000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="49216000" />
+    <option name="totallyTimeSpent" value="53993000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="27" width="1600" height="873" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49476832" visible="true" weight="0.019255456" />
-      <window_info id="Structure" order="1" sideWeight="0.5052317" side_tool="true" visible="true" weight="0.019255456" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4947735" visible="true" weight="0.019255456" />
+      <window_info id="Structure" order="1" sideWeight="0.5052265" side_tool="true" visible="true" weight="0.019255456" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3471295" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.4659546" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.25500667" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.34445927" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -231,8 +233,8 @@
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32977304" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="11" weight="0.42056075" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="12" visible="true" weight="0.10680908" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="11" visible="true" weight="0.23364486" />
+      <window_info anchor="bottom" id="Terminal" order="12" weight="0.5340454" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -248,63 +250,68 @@
       <breakpoints>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>154</line>
+          <line>164</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>149</line>
+          <line>159</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>435</line>
+          <line>485</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>104</line>
+          <line>114</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>101</line>
+          <line>111</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>102</line>
+          <line>112</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>128</line>
+          <line>138</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>123</line>
+          <line>133</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>93</line>
+          <line>103</line>
           <option name="timeStamp" value="12" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>164</line>
+          <line>175</line>
           <option name="timeStamp" value="13" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>305</line>
+          <line>327</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>257</line>
+          <line>277</line>
           <option name="timeStamp" value="30" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/simu.py</url>
+          <line>73</line>
+          <option name="timeStamp" value="32" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -317,7 +324,7 @@
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/copyset$simu.coverage" NAME="simu Coverage Results" MODIFIED="1572897108093" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/copyset$simu.coverage" NAME="simu Coverage Results" MODIFIED="1572900872999" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="breakpointCondition">
@@ -400,8 +407,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/simu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="152">
-          <caret line="228" lean-forward="true" selection-start-line="228" selection-end-line="228" />
+        <state relative-caret-position="295">
+          <caret line="473" selection-start-line="473" selection-end-line="473" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>
