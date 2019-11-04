@@ -1,0 +1,3 @@
+greedy which factor to sort?
+
+
