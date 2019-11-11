@@ -7,12 +7,20 @@ import pickle
 
 DBG = 0
 def node_seq_number():
+    """
+    generate node ID sequentially. starts from 0
+    :return:
+    """
     node_seq_number.counter += 1
     return node_seq_number.counter
 node_seq_number.counter = 0
 
 
 def copyset_seq_number():
+    """
+    generate copyset ID sequentially. starts from 0
+    :return:
+    """
     copyset_seq_number.counter += 1
     return copyset_seq_number.counter
 
@@ -26,6 +34,13 @@ copyset_seq_number.counter = 0
 
 class Cluster():
     def __init__(self,init_copysets = [{},{}], r=3, s = 4 ):
+        """
+
+        :param init_copysets:
+        :param r:  replica amount
+        :param s: predefined scatter width
+        """
+
         # // init_copysets required to be list of set  [{},{}]
         # assume no duplicates of copysets
         init_copysets_dedup = []
@@ -47,7 +62,7 @@ class Cluster():
 
         self.current_copysets = set(i+1 for i in range(len(init_copysets_dedup)))
         copyset_seq_number.counter = len(init_copysets_dedup)
-        
+        # maintains copyset- node relationship, main data structure of class
         self.copyset_node_relationship = pd.DataFrame(columns=["copyset_id", "node_id"])
         next_relation_idx = 0
         for copyset_id_min_1, nodes in enumerate(init_copysets_dedup):
@@ -59,6 +74,11 @@ class Cluster():
 
 
     def add_n_nodes(self, number_of_new_nodes):
+        """
+        add n nodes to cluster, node ID is assigned continousely
+        :param number_of_new_nodes:
+        :return:
+        """
         for j in range(number_of_new_nodes):
 
             new_node_id = node_seq_number()
@@ -97,6 +117,11 @@ class Cluster():
         # add new copyset with one node
 
     def remove_nodes(self, nodes_to_remove):
+        """
+
+        :param nodes_to_remove: list of node ID to be removed
+        :return:
+        """
         # for remove nodes, cyclic assign nodes in one half-full copyset to the next half-full
         for n in nodes_to_remove:
             # should atomic           
@@ -128,6 +153,11 @@ class Cluster():
 
 
     def remove_copysets(self, copysets_to_remove):
+        """
+
+        :param copysets_to_remove: list of copyset ID to be removed
+        :return:
+        """
         for cs in copysets_to_remove:
             # should atomic           
             self.current_copysets.remove(cs) # error if no exist.
@@ -136,6 +166,10 @@ class Cluster():
 
 
     def copyset_count_by_node(self):
+        """
+        count the amount of copysets each nodes belongs to
+        :return: a dataframe, columns are ["copyset_cnt" , "node_id"]
+        """
         cs_cnt_by_nd = self.copyset_node_relationship.groupby("node_id").count()
         # index is node id
         cs_cnt_by_nd.reset_index(inplace=True)
@@ -143,6 +177,10 @@ class Cluster():
         return cs_cnt_by_nd
 
     def node_count_by_copyset(self):
+        """
+        count nodes each copyset contains
+        :return: a dataframe, columns are ["node_cnt" , "copyset_id"]
+        """
         nd_cnt_by_cs = self.copyset_node_relationship.groupby("copyset_id").count()
         # print(type(nd_cnt_by_cs))
         #
@@ -153,6 +191,10 @@ class Cluster():
         return nd_cnt_by_cs
 
     def scatter_width_by_node(self):
+        """
+        calcualte the scatter width of each node
+        :return:  a dataframe, columns are ["scatter_width" , "node_id"]
+        """
         copyset_size = self.node_count_by_copyset()
         # copyset_cnt_by_node = self.copyset_count_by_node()
         
@@ -167,6 +209,12 @@ class Cluster():
         return scatter_by_node
 
     def node_leave_copyset(self):
+        """
+        merge copyset algorithm step 1
+        for each node that has scatter width greater than ideal scatter width (belongs to more copysets than scatter width needs to)
+        .make it randomly leave some of the copysets to makes scatter width just enough.
+        :return:
+        """
         copyset_coverage = self.copyset_count_by_node()
         for idx, row in copyset_coverage.iterrows():
             if row["copyset_cnt"] > self.p:
@@ -182,6 +230,15 @@ class Cluster():
 
 
     def merge_copyset(self):
+        """
+        merge copyset algorithm step 2
+        for each copyset that has less nodes than required replication level. try to merge with others into a
+         full copyset (size=self.r)
+         until all of these copysets are merged into full copysets.
+         well may not all, but leave last copyset not full.
+
+        :return:
+        """
         copyset_size = self.node_count_by_copyset()
         halffull_cs = copyset_size[copyset_size["node_cnt"] < self.r]
         halffull_cs.sort_values(by='node_cnt', ascending=False,inplace=True)
@@ -192,11 +249,12 @@ class Cluster():
         left_node_cnt = halffull_cs.iloc[tail0]["node_cnt"]
         is_tail_head_met = False
         copyset_migration_mapping = dict() # old_cs_id new_cs_id
+        # mapping to guide migration of nodes between copyset
         # format
-        # {1:1
-        #  2:1
+        # {1:1  # no migration
+        #  2:1 # migrate all nodes in copyset 2 to copyset 1
         #
-        #  33:{1:3, 2:1 } size 3+1
+        #  33:{1:3, 2:1 } node 33 has 3+1=4 nodes, migrate 3 nodes to copyset 1, and 1 nodes to copyset 2.
         #
         #
 
@@ -307,6 +365,17 @@ class Cluster():
         self.do_migration(copyset_migration_mapping)
 
     def do_migration(self,migration_mapping):
+        """
+        do migration, change the copyset ID of some nodes based on migration_mapping
+        :param migration_mapping:
+        # mapping to guide migration of nodes between copyset
+        # format
+        # {1:1  # no migration
+        #  2:1 # migrate all nodes in copyset 2 to copyset 1
+        #
+        #  33:{1:3, 2:1 } node 33 has 3+1=4 nodes, migrate 3 nodes to copyset 1, and 1 nodes to copyset 2.
+        :return:
+        """
         for src_cs,dest_cs in migration_mapping.items():
             if isinstance(dest_cs,int) and dest_cs == src_cs:
                 continue
@@ -321,6 +390,14 @@ class Cluster():
 
 
     def put_node_size_in_migration_mapping(self, mapping, copyset_dest, copyset_src, size):
+        """
+        update mapping to put portion (size) of nodes in copyset_src to copyset_dest
+        :param mapping: migration mappingf
+        :param copyset_dest:
+        :param copyset_src:
+        :param size:
+        :return:
+        """
         if mapping.get(copyset_src) != None:
             if isinstance(mapping.get(copyset_src), dict):
                 mapping[copyset_src][copyset_dest] = size
@@ -333,6 +410,20 @@ class Cluster():
 
 
     def update_copyset_migration_mapping(self, copyset_migration_mapping, halffull_cs, dest_copyset_id, tail0, nodes_merged_at_tail0,tail1, nodes_merged_at_tail1):
+        """
+        migrate all nodes in dest_copyset_id, nodes in copysets between tail0 and tail1, may include portion of nodes at tail0 and tail1
+        to dest_copyset_id.
+
+        :param copyset_migration_mapping: the mapping to be updated
+        :param halffull_cs: dataframe of copyset less than replication level r, columns ["node_cnt" , "copyset_id"], sorted by "node_cnt" descending,
+        :param dest_copyset_id: the copyset all nodes are going to be placed into
+        :param tail0: rear idx to halffull copyset
+        :param nodes_merged_at_tail0: the amount of nodes to be merged in the copyset of tail0
+        :param tail1: front idx to halffull copyset
+        :param nodes_merged_at_tail1: the amount of nodes to be merged in the copyset of tail1
+        :return:
+        """
+
         # print(row["copyset_id"], row["node_cnt"], tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
 
         copyset_migration_mapping[dest_copyset_id] = dest_copyset_id

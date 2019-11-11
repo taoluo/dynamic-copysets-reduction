@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d93b854a-968d-4466-9208-b06e29ef94f0" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/simu.py" beforeDir="false" afterPath="$PROJECT_DIR$/simu.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -15,8 +16,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/simu.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="295">
-              <caret line="473" selection-start-line="473" selection-end-line="473" />
+            <state relative-caret-position="680">
+              <caret line="40" column="42" selection-start-line="40" selection-start-column="42" selection-end-line="40" selection-end-column="42" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -27,7 +28,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/indexing.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-7">
+            <state relative-caret-position="23477">
               <caret line="1410" selection-start-line="1410" selection-end-line="1410" />
             </state>
           </provider>
@@ -45,7 +46,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/random.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="119">
+            <state relative-caret-position="5287">
               <caret line="320" selection-start-line="320" selection-end-line="320" />
             </state>
           </provider>
@@ -54,7 +55,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/reshape/merge.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
+            <state relative-caret-position="323">
               <caret line="62" column="12" selection-start-line="62" selection-start-column="4" selection-end-line="62" selection-end-column="12" />
             </state>
           </provider>
@@ -63,7 +64,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/frame.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
+            <state relative-caret-position="119578">
               <caret line="7142" column="54" selection-start-line="7142" selection-start-column="54" selection-end-line="7142" selection-end-column="54" />
             </state>
           </provider>
@@ -84,7 +85,6 @@
       <find>init</find>
       <find>alffull_cs.iloc[tail1]</find>
       <find>pprint.p</find>
-      <find>put_node_size_in_migration_mapping</find>
       <find>update_copyset_migration_mapping</find>
       <find>ail0 c</find>
       <find>head tail</find>
@@ -102,7 +102,7 @@
       <find>&quot;head copyset: {cop</find>
       <find>print</find>
       <find>{</find>
-      <find>moving headtail</find>
+      <find>put_node_size_in_migration_mapping</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -124,8 +124,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="325" />
-    <option name="y" value="152" />
+    <option name="x" value="278" />
+    <option name="y" value="145" />
     <option name="width" value="996" />
     <option name="height" value="577" />
   </component>
@@ -135,7 +135,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -147,6 +146,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -175,6 +175,9 @@
       <module name="copyset" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -208,22 +211,24 @@
       <updated>1571319461094</updated>
       <workItem from="1571319464828" duration="738000" />
       <workItem from="1571454269465" duration="6866000" />
-      <workItem from="1572806588728" duration="46389000" />
+      <workItem from="1572806588728" duration="47195000" />
+      <workItem from="1572905009168" duration="120000" />
+      <workItem from="1573510493854" duration="3052000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="53993000" />
+    <option name="totallyTimeSpent" value="57971000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="27" width="1600" height="873" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4947735" visible="true" weight="0.019255456" />
-      <window_info id="Structure" order="1" sideWeight="0.5052265" side_tool="true" visible="true" weight="0.019255456" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48495576" visible="true" weight="0.03530167" />
+      <window_info id="Structure" order="1" sideWeight="0.5150443" side_tool="true" visible="true" weight="0.03530167" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.3471295" />
+      <window_info active="true" anchor="bottom" id="Find" order="1" visible="true" weight="0.24566089" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.4659546" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.34445927" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
@@ -233,12 +238,12 @@
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32977304" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
-      <window_info active="true" anchor="bottom" id="Python Console" order="11" visible="true" weight="0.23364486" />
-      <window_info anchor="bottom" id="Terminal" order="12" weight="0.5340454" />
+      <window_info anchor="bottom" id="Python Console" order="11" weight="0.67957276" />
+      <window_info anchor="bottom" id="Terminal" order="12" weight="0.3564753" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="SciView" order="3" visible="true" weight="0.2830552" />
+      <window_info anchor="right" id="SciView" order="3" visible="true" weight="0.1732991" />
       <window_info anchor="right" id="Database" order="4" />
     </layout>
   </component>
@@ -250,67 +255,67 @@
       <breakpoints>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>164</line>
+          <line>206</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>159</line>
+          <line>201</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>485</line>
+          <line>576</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>114</line>
+          <line>139</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>111</line>
+          <line>136</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>112</line>
+          <line>137</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>138</line>
+          <line>172</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>133</line>
+          <line>163</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>103</line>
+          <line>128</line>
           <option name="timeStamp" value="12" />
         </line-breakpoint>
         <line-breakpoint suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>175</line>
+          <line>223</line>
           <option name="timeStamp" value="13" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>327</line>
+          <line>404</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>277</line>
+          <line>335</line>
           <option name="timeStamp" value="30" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simu.py</url>
-          <line>73</line>
+          <line>93</line>
           <option name="timeStamp" value="32" />
         </line-breakpoint>
       </breakpoints>
@@ -363,17 +368,27 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/reshape/merge.py">
+    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/IPython/core/interactiveshell.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="62" column="12" selection-start-line="62" selection-start-column="4" selection-end-line="62" selection-end-column="12" />
+        <state relative-caret-position="134">
+          <caret line="3325" selection-start-line="3325" selection-end-line="3325" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/frame.py">
+    <entry file="file://$PROJECT_DIR$/simu.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="7142" column="54" selection-start-line="7142" selection-start-column="54" selection-end-line="7142" selection-end-column="54" />
+        <state relative-caret-position="680">
+          <caret line="40" column="42" selection-start-line="40" selection-start-column="42" selection-end-line="40" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/indexing.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="23477">
+          <caret line="1410" selection-start-line="1410" selection-end-line="1410" />
         </state>
       </provider>
     </entry>
@@ -384,34 +399,24 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/indexing.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-7">
-          <caret line="1410" selection-start-line="1410" selection-end-line="1410" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/IPython/core/interactiveshell.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="134">
-          <caret line="3325" selection-start-line="3325" selection-end-line="3325" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/random.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
+        <state relative-caret-position="5287">
           <caret line="320" selection-start-line="320" selection-end-line="320" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/simu.py">
+    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/reshape/merge.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="295">
-          <caret line="473" selection-start-line="473" selection-end-line="473" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="323">
+          <caret line="62" column="12" selection-start-line="62" selection-start-column="4" selection-end-line="62" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/miniconda2/envs/dss/lib/python3.7/site-packages/pandas/core/frame.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119578">
+          <caret line="7142" column="54" selection-start-line="7142" selection-start-column="54" selection-end-line="7142" selection-end-column="54" />
         </state>
       </provider>
     </entry>
