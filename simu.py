@@ -542,6 +542,7 @@ class Cluster():
         pprint.pprint(copyset_migration_mapping)
         print("merge start")
         self.__do_migration(copyset_migration_mapping)
+        self.dedup_copyset()
 
     def __do_migration(self, migration_mapping):
         """
@@ -556,17 +557,41 @@ class Cluster():
         :return:
         """
         for src_cs,dest_cs in migration_mapping.items():
-            if isinstance(dest_cs,int) and dest_cs == src_cs:
-            # No migration for this case
-                continue
+            if isinstance(dest_cs,int):
+                if dest_cs == src_cs:
+                # No migration for this case
+                    continue
+                else: # dest_cs != src_cs
+                # No migration for this case
+                    mig_nodes = self.copyset_node_relationship[self.copyset_node_relationship['copyset_id']==src_cs]
+                    current_dest_cs = set(self.copyset_node_relationship[self.copyset_node_relationship['copyset_id'] \
+                                                                         == dest_cs]["node_id"])
+                    for idx, row in mig_nodes:
+                        if row["node_id"] not in current_dest_cs:
+                            self.copyset_node_relationship.loc[idx, "copyset_id"] = dest
+                            current_dest_cs.add(row["node_id"])
+                        else:
+                            # merge dup node id by remove relationship
+                            self.copyset_node_relationship.drop(idx, inplace=True)
 
             elif isinstance(dest_cs,dict):
                 mig_node = self.copyset_node_relationship[self.copyset_node_relationship['copyset_id']==src_cs]
-                mig_node_idx = set(mig_node.index)
+                mig_node_idx = set(mig_node.index) # all node to be migrated
                 for dest,node_size in dest_cs.items():
-                    mig_grp = random.sample(mig_node_idx,node_size)
-                    self.copyset_node_relationship.loc[mig_grp, "copyset_id"] = dest
-                    mig_node_idx  = mig_node_idx - set(mig_grp)
+                    # BUG sample larger than nodesize
+                    mig_nodes_idx_sample = random.sample(mig_node_idx,node_size) # list
+
+                    current_dest_cs = set(self.copyset_node_relationship[self.copyset_node_relationship['copyset_id'] \
+                                                                         == dest]["node_id"])
+                    for idx,row in self.copyset_node_relationship.loc[mig_nodes_idx_sample].iterrows():
+                        if row["node_id"] not in current_dest_cs:
+                            self.copyset_node_relationship.loc[idx, "copyset_id"] = dest
+                            current_dest_cs.add(row["node_id"])
+                        else:
+                            # merge dup node id by remove relationship
+                            self.copyset_node_relationship.drop(idx, inplace=True)
+                    # nodes left to be migrated.
+                    mig_node_idx  = mig_node_idx - set(mig_nodes_idx_sample)
 
 
     def __put_node_size_in_migration_mapping(self, mapping, copyset_dest, copyset_src, size):
@@ -675,101 +700,116 @@ if __name__ == "__main__":
     # for method in ("greedy", "random"):
     method = "random"
     print(method)
-    n = 8
-    r = 2
-    s = 2
+    n = 40
+    r = 5
+    s = 8
     c = Cluster(n, r, s, init = method)
-    c.dedup_copyset()
-    c.get_node_count_by_copyset()
+    # c.dedup_copyset()
+    # c.get_node_count_by_copyset()
 
 
-#    r = 5
-#    s = 8
-#    n =40
-#    CS_3_20_4 = init_random_copyset(r, n, s)
-#    # c = Cluster([[1,2,3],[2,3,4],[3,4,5],
-#    #             [4,5,6],[5,6,1],[6,1,2],
-#    #             [1,3,5],[2,4,6]])
-#    # ff = open("CS_3_20_4.pkl", 'rb')
-#    # CS_3_20_4 = pickle.load(ff)
-#    c = Cluster(CS_3_20_4,r=r,s=s)
-#    print(c.copyset_node_relationship)
-#
-#    print("init copyset_node_relationship size %d" % len(c.copyset_node_relationship))
-#    print(c.cluster_nodes)
-#    print(c.current_copysets)
-#
-#    print("\n\n\ncopyset_count_by_node")
-#    print(c.copyset_count_by_node())
-#
-#    print("\n\n\nnode_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#
-#
-#    print("\n\n\nscatter_width_by_node")
-#    print(c.scatter_width_by_node())
-#
-#
-#
-#    d_node = [6, 4]
-#    c.remove_nodes(d_node)
-#
-#    print("\n\n\nafter delete node %s, copyset_node_relationship" % repr(d_node))
-#    print(c.cluster_nodes)
-#    print(c.current_copysets)
-#    print(len(c.copyset_node_relationship))
-#    print(c.copyset_node_relationship)
-#    print("\n\n\nnode_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#
-#
-#
-#
-#    n = 4
-#    c.add_n_nodes(n)
-#    print("\n\n\nafter add %d new nodes,  copyset_node_relationship" % n)
-#    print(c.cluster_nodes)
-#    print(c.current_copysets)
-#    print(len(c.copyset_node_relationship))
-#    print(c.copyset_node_relationship)
-#    print("\n\n\nnode_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#
-#
-#    rm_cs = [7]
-#    c.remove_copysets(rm_cs)
-#    print("\n\n\nafter delete copyset %s, copyset_node_relationship" % repr(rm_cs))
-#    print(c.cluster_nodes)
-#    print(c.current_copysets)
-#    print(len(c.copyset_node_relationship))
-#    print(c.copyset_node_relationship)
-#    print("\n\n\nnode_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#
-#
-#
-#    c.node_leave_copyset()
-#
-#    print("\nbefore merge: node_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#    print(c.current_copysets)
-#
-#    c.merge_copyset()
-#
-#    print("\nafter merge: node_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#
-#    print(c.current_copysets)
-#    print("\n\n\ncopyset_count_by_node")
-#    print(c.copyset_count_by_node())
-#
-#    print("\n\n\nnode_count_by_copyset")
-#    print(c.node_count_by_copyset())
-#
-#
-#    print("\n\n\nscatter_width_by_node")
-#    print(c.scatter_width_by_node())
-#
-#
-#    print("bye~")
-#
+   # r = 5
+   # s = 8
+   # n =40
+   # CS_3_20_4 = init_random_copyset(r, n, s)
+   # # c = Cluster([[1,2,3],[2,3,4],[3,4,5],
+   # #             [4,5,6],[5,6,1],[6,1,2],
+   # #             [1,3,5],[2,4,6]])
+   # # ff = open("CS_3_20_4.pkl", 'rb')
+   # # CS_3_20_4 = pickle.load(ff)
+   # c = Cluster(CS_3_20_4,r=r,s=s)
+
+    print(c.copyset_node_relationship)
+
+    print("init copyset_node_relationship size %d" % len(c.copyset_node_relationship))
+    print(c.cluster_nodes)
+    print(c.current_copysets)
+
+    print("\n\n\ncopyset_count_by_node")
+    print(c.get_copyset_count_by_node())
+
+    print("\n\n\nnode_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+
+    print("\n\n\nscatter_width_by_node")
+    print(c.get_scatter_width_by_node())
+
+
+
+    d_node = [6, 4]
+    c.remove_nodes(d_node)
+
+    print("\n\n\nafter delete node %s, copyset_node_relationship" % repr(d_node))
+    print(c.cluster_nodes)
+    print(c.current_copysets)
+    print(len(c.copyset_node_relationship))
+    print(c.copyset_node_relationship)
+    print("\n\n\nnode_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+
+
+
+    n = 4
+    c.add_n_nodes(n)
+    print("\n\n\nafter add %d new nodes,  copyset_node_relationship" % n)
+    print(c.cluster_nodes)
+    print(c.current_copysets)
+    print(len(c.copyset_node_relationship))
+    print(c.copyset_node_relationship)
+    print("\n\n\nnode_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+
+    rm_cs = [7]
+    c.remove_copysets(rm_cs)
+    print("\n\n\nafter delete copyset %s, copyset_node_relationship" % repr(rm_cs))
+    print(c.cluster_nodes)
+    print(c.current_copysets)
+    print(len(c.copyset_node_relationship))
+    print(c.copyset_node_relationship)
+    print("\n\n\nnode_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+
+
+    c.node_leave_copyset()
+
+    print("\nbefore merge: node_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+    # print(c.current_copysets)
+
+    c.merge_copyset()
+
+    print("\nafter merge: node_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+    print(c.current_copysets)
+    print("\n\n\nafter merge: copyset_count_by_node")
+    print(c.get_copyset_count_by_node())
+
+
+    print("\n\n\nafter merge: scatter_width_by_node")
+    print(c.get_scatter_width_by_node())
+
+    c.merge_copyset()
+
+    print("\nafter 2nd merge: node_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+
+    print("\nafter 2nd merge: node_count_by_copyset")
+    print(c.get_node_count_by_copyset())
+
+    print(c.current_copysets)
+    print("\n\n\nafter 2nd merge: copyset_count_by_node")
+    print(c.get_copyset_count_by_node())
+
+
+    print("\n\n\nafter 2nd merge: scatter_width_by_node")
+    print(c.get_scatter_width_by_node())
+
+
+    print("bye~")
+
