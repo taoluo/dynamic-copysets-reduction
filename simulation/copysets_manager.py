@@ -148,7 +148,7 @@ class CopysetsManager:
       self.scatter_dict[m] = len(new_members)
     self.scatter_dict.pop(node)
     self.N -= 1
-    self.generate()  
+    self.generate()
 
   def show(self):
     tmp = sorted([list(c) for c in self.copysets])

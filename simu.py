@@ -48,14 +48,14 @@ class Cluster():
         self.n = n
         self.r = r
         self.s = s
+        self.method = init
 
         init_copysets = []
 
-        if init == 'random':
+        if self.method == 'random':
             init_copysets = self.random_generate_copysets(n, r, s)
-        elif init == 'greedy':
+        elif self.method == 'greedy':
             init_copysets = self.greedy_generate_copysets(n, r, s)
-            print(init_copysets)
         else:
             logging.error('init {} not supported'.format(init))
             return
@@ -66,10 +66,7 @@ class Cluster():
         self.ideal_s = math.ceil(s/(r-1)) * (r-1) # round s,  p* (r-1),  >= s
         # ideal_s  >= s
         # real s depends on size,  min (n, ideal_s)
-        self.cluster_nodes = set()
-        for cs in init_copysets:
-            for n in cs:
-                self.cluster_nodes.add(n)
+        self.cluster_nodes = set(range(n))
         node_seq_number.counter = max(self.cluster_nodes)
 
         self.current_copysets = set(i+1 for i in range(len(init_copysets)))
@@ -223,37 +220,56 @@ class Cluster():
         :param number_of_new_nodes:
         :return:
         """
-        for j in range(number_of_new_nodes):
+        self.n += number_of_new_nodes
+        if self.method == 'random':
+            for j in range(number_of_new_nodes):
 
-            new_node_id = node_seq_number()
+                new_node_id = node_seq_number()
 
-            left = self.cluster_nodes
-            runout_sample = False
-            for j in range(self.p):
-                new_copyset_id = copyset_seq_number()
+                left = self.cluster_nodes
+                runout_sample = False
+                for j in range(self.p):
+                    new_copyset_id = copyset_seq_number()
 
-                self.current_copysets.add(new_copyset_id)
-                if not runout_sample:
-                    if len(left)>= self.r-1:
+                    self.current_copysets.add(new_copyset_id)
+                    if not runout_sample:
+                        if len(left)>= self.r-1:
+                            chosen_siblings = set(random.sample(left, k=self.r-1))
+
+
+                            left = left - chosen_siblings
+                        # case where ideal s > n
+                        else:
+                            runout_sample = True
+                            chosen_siblings = left
+                            temp_left = self.cluster_nodes - left
+                            chosen_siblings += set(random.sample(temp_left, k=(self.r-1 - len(chosen_siblings))))
+                    else:
+
                         chosen_siblings = set(random.sample(left, k=self.r-1))
 
+                    new_nodes_df = pd.DataFrame({"copyset_id": [new_copyset_id]*self.r, "node_id": [new_node_id] + list(chosen_siblings)})
+                    self.copyset_node_relationship = self.copyset_node_relationship.append(new_nodes_df, ignore_index=True)
 
-                        left = left - chosen_siblings
-                    # case where ideal s > n
-                    else:
-                        runout_sample = True
-                        chosen_siblings = left
-                        temp_left = self.cluster_nodes - left
-                        chosen_siblings += set(random.sample(temp_left, k=(self.r-1 - len(chosen_siblings))))
-                else:
-
-                    chosen_siblings = set(random.sample(left, k=self.r-1))
-
-                new_nodes_df = pd.DataFrame({"copyset_id": [new_copyset_id]*self.r, "node_id": [new_node_id] + list(chosen_siblings)})
-                self.copyset_node_relationship = self.copyset_node_relationship.append(new_nodes_df, ignore_index=True)
-
-                # add new node at last
+                    # add new node at last
+                    self.cluster_nodes.add(new_node_id)
+        elif self.method == 'greedy':
+            for _ in range(number_of_new_nodes):
+                new_node_id = node_seq_number()
                 self.cluster_nodes.add(new_node_id)
+                self.scatter_dict[new_node_id] = 0
+            old_copysets = self.greedy_copysets.copy()
+            self.greedy_generate_step()
+            diff_copysets = self.greedy_copysets - old_copysets
+            copyset_ids = []
+            node_ids = []
+            for copyset in diff_copysets:
+                new_copyset_id = copyset_seq_number()
+                copyset_ids.extend([new_copyset_id] * self.r)
+                for node in copyset:
+                    node_ids.append(node)
+            new_nodes_df = pd.DataFrame({"copyset_id": copyset_ids, "node_id": node_ids})
+            self.copyset_node_relationship = self.copyset_node_relationship.append(new_nodes_df, ignore_index=True)
 
 
 
@@ -267,21 +283,54 @@ class Cluster():
         :return:
         """
         # for remove nodes, cyclic assign nodes in one half-full copyset to the next half-full
-        for n in nodes_to_remove:
-            # should atomic           
-            self.cluster_nodes.remove(n) # error if no exist.
-        self.copyset_node_relationship.reset_index(drop=True, inplace=True)
-        relationships_to_mod = self.copyset_node_relationship[ self.copyset_node_relationship["node_id"].isin(nodes_to_remove)]
-        for index, row in relationships_to_mod.iterrows():
-            print
-            this_copyset_nodes = self.copyset_node_relationship[self.copyset_node_relationship["copyset_id"]==row['copyset_id']]['node_id']
-            node_candidates = self.cluster_nodes - set(this_copyset_nodes)
-            new_node = random.sample(node_candidates, 1)[0]
-            print( "\n\nremoved node_id: %d from copyset %d" % (row['node_id'], row['copyset_id']))
-            self.copyset_node_relationship.at[index, "node_id"] = new_node # before ==row['node_id']
-            print( "new node id joined %d" % self.copyset_node_relationship.iloc[index].loc["node_id"])
+        if self.method == 'random':
+            for n in nodes_to_remove:
+                self.n -= 1
+                # should atomic           
+                self.cluster_nodes.remove(n) # error if no exist.
+            self.copyset_node_relationship.reset_index(drop=True, inplace=True)
+            relationships_to_mod = self.copyset_node_relationship[ self.copyset_node_relationship["node_id"].isin(nodes_to_remove)]
+            for index, row in relationships_to_mod.iterrows():
+                this_copyset_nodes = self.copyset_node_relationship[self.copyset_node_relationship["copyset_id"]==row['copyset_id']]['node_id']
+                node_candidates = self.cluster_nodes - set(this_copyset_nodes)
+                new_node = random.sample(node_candidates, 1)[0]
+                print( "\n\nremoved node_id: %d from copyset %d" % (row['node_id'], row['copyset_id']))
+                self.copyset_node_relationship.at[index, "node_id"] = new_node # before ==row['node_id']
+                print( "new node id joined %d" % self.copyset_node_relationship.iloc[index].loc["node_id"])
+        elif self.method == 'greedy':
+            for node in nodes_to_remove:
+                if node not in self.scatter_dict:
+                    logging.error("Node {} does not exist".format(node))
+                    continue
+                members = self.get_copysets_member(node)
+                old_copysets = self.greedy_copysets.copy()
+                self.greedy_copysets = set(copyset for copyset in self.greedy_copysets if node not in copyset)
+                diff_copysets = old_copysets - self.greedy_copysets
+                for copyset in diff_copysets:
+                    relationships_tmp = self.copyset_node_relationship[self.copyset_node_relationship["node_id"].isin(list(copyset))]
+                    relationships_tmp = relationships_tmp.groupby("copyset_id").count()
+                    relationships_tmp.rename({"node_id":"copyset_cnt"}, axis=1, inplace=True)
+                    deleted_copyset_id = relationships_tmp[relationships_tmp["copyset_cnt"] == 3].index[0]
+                    self.copyset_node_relationship.drop(self.copyset_node_relationship[self.copyset_node_relationship["copyset_id"] == deleted_copyset_id].index, inplace = True)
 
-        print("hello")
+                for m in members:
+                    new_members = self.get_copysets_member(m)
+                    self.scatter_dict[m] = len(new_members)
+                self.scatter_dict.pop(node)
+                self.n -= 1
+            old_copysets = self.greedy_copysets.copy()
+            self.greedy_generate_step()
+            diff_copysets = self.greedy_copysets - old_copysets
+            copyset_ids = []
+            node_ids = []
+            for copyset in diff_copysets:
+                new_copyset_id = copyset_seq_number()
+                copyset_ids.extend([new_copyset_id] * self.r)
+                for node in copyset:
+                    node_ids.append(node)
+            new_nodes_df = pd.DataFrame({"copyset_id": copyset_ids, "node_id": node_ids})
+            self.copyset_node_relationship = self.copyset_node_relationship.append(new_nodes_df, ignore_index=True)
+
 
         # sorted_halffull_copyset = self.relationship_to_mod["copyset_id"].sort_values()
         # s = len(sorted_halffull_copyset)
@@ -634,7 +683,10 @@ if __name__ == "__main__":
     r = 3
     s = 4
     c = Cluster(n, r, s, init = 'greedy')
-    print(c.greedy_copysets)
+
+    print(c.copyset_node_relationship)
+    c.remove_nodes([2])
+    print(c.copyset_node_relationship)
 #    r = 5
 #    s = 8
 #    n =40
