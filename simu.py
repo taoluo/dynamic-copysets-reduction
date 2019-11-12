@@ -83,6 +83,40 @@ class Cluster():
                 {"copyset_id": copyset_id_min_1+1, "node_id":n}
                 next_relation_idx += 1
 
+    def dedup_copyset(self):
+        """
+        if dup copyset exist, return 1, dedup copyset
+        if dup copyset not exist, return 0
+        :return:
+        """
+
+        copyset_table = self.get_copyset_table()
+        copyset_cnt = copyset_table.groupby("copyset_tuple").count() # dataframe index is tuple
+        collision_copysets = copyset_cnt[copyset_cnt["copyset_id"]!=1]
+        if len(collision_copysets) != 0:
+            for copyset_tuple, _ in copyset_cnt.iterrows():
+                print("dupcate copyset %s" % repr(copyset_tuple))
+                dup_copysets = copyset_table[copyset_table.loc[:, "copyset_tuple"] == copyset_tuple]
+                # remove dup copysets with greater ID
+                copyset_to_remove = dup_copysets["copyset_id"].sort_values()[1:]
+                self.remove_copysets(copyset_to_remove)
+            return 1
+        else:
+            return 0
+
+
+
+    def get_copyset_table(self):
+        """
+
+        :return: dataframe copyset_id copyset_tuple
+        """
+        copyset_table = self.copyset_node_relationship.groupby("copyset_id").apply(
+            lambda x:tuple(x["node_id"].sort_values()))
+        copyset_table.name = "copyset_tuple"
+        copyset_table = copyset_table.reset_index(drop=False)
+        return copyset_table
+
     def random_generate_copysets(self, n, r, s):
         node_list = list(range(1,n+1))
         # n * (s/(n-1)) = #cs * r
@@ -632,11 +666,23 @@ def init_random_copyset(r, n, s):
 
 
 if __name__ == "__main__":
-    n = 9
-    r = 3
-    s = 4
-    c = Cluster(n, r, s, init = 'greedy')
-    print(c.greedy_copysets)
+    # n = 9
+    # r = 3
+    # s = 4
+    # c = Cluster(n, r, s, init = 'greedy')
+    # print(c.greedy_copysets)
+
+    # for method in ("greedy", "random"):
+    method = "random"
+    print(method)
+    n = 8
+    r = 2
+    s = 2
+    c = Cluster(n, r, s, init = method)
+    c.dedup_copyset()
+    c.get_node_count_by_copyset()
+
+
 #    r = 5
 #    s = 8
 #    n =40
