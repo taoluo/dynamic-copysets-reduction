@@ -223,6 +223,7 @@ class Cluster():
         :param number_of_new_nodes:
         :return:
         """
+        self.n += number_of_new_nodes
         for j in range(number_of_new_nodes):
 
             new_node_id = node_seq_number()
@@ -309,7 +310,7 @@ class Cluster():
         # add remove from copyset
 
 
-    def copyset_count_by_node(self):
+    def get_copyset_count_by_node(self):
         """
         count the amount of copysets each nodes belongs to
         :return: a dataframe, columns are ["copyset_cnt" , "node_id"]
@@ -320,7 +321,7 @@ class Cluster():
         cs_cnt_by_nd.rename({"copyset_id":"copyset_cnt"},axis=1,inplace=True)
         return cs_cnt_by_nd
 
-    def node_count_by_copyset(self):
+    def get_node_count_by_copyset(self):
         """
         count nodes each copyset contains
         :return: a dataframe, columns are ["node_cnt" , "copyset_id"]
@@ -334,12 +335,12 @@ class Cluster():
         nd_cnt_by_cs.rename({"node_id":"node_cnt"},axis=1,inplace=True)
         return nd_cnt_by_cs
 
-    def scatter_width_by_node(self):
+    def get_scatter_width_by_node(self):
         """
         calcualte the scatter width of each node
         :return:  a dataframe, columns are ["scatter_width" , "node_id"]
         """
-        copyset_size = self.node_count_by_copyset()
+        copyset_size = self.get_node_count_by_copyset()
         # copyset_cnt_by_node = self.copyset_count_by_node()
         
         scatter_df = pd.merge(self.copyset_node_relationship, copyset_size,how="left", on="copyset_id")
@@ -354,12 +355,12 @@ class Cluster():
 
     def node_leave_copyset(self):
         """
-        merge copyset algorithm step 1
+        API merge copyset algorithm step 1
         for each node that has scatter width greater than ideal scatter width (belongs to more copysets than scatter width needs to)
         .make it randomly leave some of the copysets to makes scatter width just enough.
         :return:
         """
-        copyset_coverage = self.copyset_count_by_node()
+        copyset_coverage = self.get_copyset_count_by_node()
         for idx, row in copyset_coverage.iterrows():
             if row["copyset_cnt"] > self.p:
                 if DBG:
@@ -375,7 +376,7 @@ class Cluster():
 
     def merge_copyset(self):
         """
-        merge copyset algorithm step 2
+        API merge copyset algorithm step 2
         for each copyset that has less nodes than required replication level. try to merge with others into a
          full copyset (size=self.r)
          until all of these copysets are merged into full copysets.
@@ -383,7 +384,7 @@ class Cluster():
 
         :return:
         """
-        copyset_size = self.node_count_by_copyset()
+        copyset_size = self.get_node_count_by_copyset()
         halffull_cs = copyset_size[copyset_size["node_cnt"] < self.r]
         halffull_cs.sort_values(by='node_cnt', ascending=False,inplace=True)
         halffull_cs.reset_index(drop=True, inplace=True)
@@ -438,8 +439,8 @@ class Cluster():
                 # print(row["copyset_id"], row["node_cnt"], halffull_cs.loc[tail0]["copyset_id"],
                 #       nodes_merged_at_tail0, halffull_cs.loc[tail1]["copyset_id"],nodes_merged_at_tail1)
 
-                self.update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
-                                                      tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
+                self.__update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
+                                                        tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
 
 
                 continue
@@ -474,8 +475,8 @@ class Cluster():
                     )
 
                 print("last merged copyset size %d" % merged_size)
-                self.update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
-                                                      tail0, nodes_merged_at_tail0, -1,-1)
+                self.__update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
+                                                        tail0, nodes_merged_at_tail0, -1, -1)
 
                 break
 
@@ -498,17 +499,17 @@ class Cluster():
                                 tail1=halffull_cs.loc[tail1]["copyset_id"], \
                                 tail1_n=nodes_merged_at_tail1)
                 )
-            self.update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
-                                                  tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
+            self.__update_copyset_migration_mapping(copyset_migration_mapping, halffull_cs, row["copyset_id"],
+                                                    tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1)
 
 
 
         print("merge plan ")
         pprint.pprint(copyset_migration_mapping)
         print("merge start")
-        self.do_migration(copyset_migration_mapping)
+        self.__do_migration(copyset_migration_mapping)
 
-    def do_migration(self,migration_mapping):
+    def __do_migration(self, migration_mapping):
         """
         do migration, change the copyset ID of some nodes based on migration_mapping
         :param migration_mapping:
@@ -522,6 +523,7 @@ class Cluster():
         """
         for src_cs,dest_cs in migration_mapping.items():
             if isinstance(dest_cs,int) and dest_cs == src_cs:
+            # No migration for this case
                 continue
 
             elif isinstance(dest_cs,dict):
@@ -533,7 +535,7 @@ class Cluster():
                     mig_node_idx  = mig_node_idx - set(mig_grp)
 
 
-    def put_node_size_in_migration_mapping(self, mapping, copyset_dest, copyset_src, size):
+    def __put_node_size_in_migration_mapping(self, mapping, copyset_dest, copyset_src, size):
         """
         update mapping to put portion (size) of nodes in copyset_src to copyset_dest
         :param mapping: migration mappingf
@@ -553,7 +555,7 @@ class Cluster():
 
 
 
-    def update_copyset_migration_mapping(self, copyset_migration_mapping, halffull_cs, dest_copyset_id, tail0, nodes_merged_at_tail0,tail1, nodes_merged_at_tail1):
+    def __update_copyset_migration_mapping(self, copyset_migration_mapping, halffull_cs, dest_copyset_id, tail0, nodes_merged_at_tail0, tail1, nodes_merged_at_tail1):
         """
         migrate all nodes in dest_copyset_id, nodes in copysets between tail0 and tail1, may include portion of nodes at tail0 and tail1
         to dest_copyset_id.
@@ -575,7 +577,7 @@ class Cluster():
 
         if tail1 == -1:
             if nodes_merged_at_tail0 != 0:
-                self.put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id, halffull_cs.loc[tail0]['copyset_id'], nodes_merged_at_tail0)
+                self.__put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id, halffull_cs.loc[tail0]['copyset_id'], nodes_merged_at_tail0)
 
             ## todo
             if dest_copyset_id+1 <= tail0-1:
@@ -585,16 +587,16 @@ class Cluster():
             return
 
         if tail1 == tail0:
-            self.put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id,
-                                                    halffull_cs.loc[tail0]['copyset_id'], nodes_merged_at_tail0)
+            self.__put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id,
+                                                      halffull_cs.loc[tail0]['copyset_id'], nodes_merged_at_tail0)
             return
 
         if tail1< tail0: # todo tail1 size may not needed
-            self.put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id,
-                                                halffull_cs.loc[tail1]['copyset_id'], nodes_merged_at_tail1)
+            self.__put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id,
+                                                      halffull_cs.loc[tail1]['copyset_id'], nodes_merged_at_tail1)
             if nodes_merged_at_tail0 != 0:
-                self.put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id,
-                                                        halffull_cs.loc[tail0]['copyset_id'], nodes_merged_at_tail0)
+                self.__put_node_size_in_migration_mapping(copyset_migration_mapping, dest_copyset_id,
+                                                          halffull_cs.loc[tail0]['copyset_id'], nodes_merged_at_tail0)
 
             if tail1 + 1 <= tail0 - 1:
                 remain_cs = halffull_cs.loc[tail1 + 1:tail0 - 1]["copyset_id"]
