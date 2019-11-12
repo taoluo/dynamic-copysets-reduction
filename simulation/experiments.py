@@ -1,4 +1,4 @@
-from copysets_gen import CopysetsManager
+from copysets_manager import CopysetsManager
 from scipy.special import comb
 import matplotlib.pyplot as plt
 import random

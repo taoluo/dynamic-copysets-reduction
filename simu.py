@@ -4,6 +4,11 @@ import random
 import pprint
 import warnings
 import pickle
+import logging
+from functools import cmp_to_key
+
+
+logging.basicConfig(level=logging.DEBUG)
 
 DBG = 0
 def node_seq_number():
@@ -25,37 +30,177 @@ copyset_seq_number.counter = 0
 # print("current node max is %d" % node_seq_number.counter)
 
 class Cluster():
-    def __init__(self,init_copysets = [{},{}], r=3, s = 4 ):
+    def __init__(self, n = 9, r = 3, s = 4, init = 'greedy'):
+        self.n = n
+        self.r = r
+        self.s = s
+
+        init_copysets = []
+
+        if init == 'random':
+            init_copysets = self.random_generate_copysets(n, r, s)
+        elif init == 'greedy':
+            init_copysets = self.greedy_generate_copysets(n, r, s)
+            print(init_copysets)
+        else:
+            logging.error('init {} not supported'.format(init))
+            return
         # // init_copysets required to be list of set  [{},{}]
         # assume no duplicates of copysets
-        init_copysets_dedup = []
-        for cs in init_copysets:
-            if cs not in init_copysets_dedup:
-                init_copysets_dedup.append(cs)
 
-        self.r = r # replica amount
-        self.s = s # predefined scatter width
         self.p = math.ceil(s/(r-1)) # permutation amount 
         self.ideal_s = math.ceil(s/(r-1)) * (r-1) # round s,  p* (r-1),  >= s
         # ideal_s  >= s
         # real s depends on size,  min (n, ideal_s)
         self.cluster_nodes = set()
-        for cs in init_copysets_dedup:
+        for cs in init_copysets:
             for n in cs:
                 self.cluster_nodes.add(n)
         node_seq_number.counter = max(self.cluster_nodes)
 
-        self.current_copysets = set(i+1 for i in range(len(init_copysets_dedup)))
-        copyset_seq_number.counter = len(init_copysets_dedup)
-        
+        self.current_copysets = set(i+1 for i in range(len(init_copysets)))
+        copyset_seq_number.counter = len(init_copysets)
+
         self.copyset_node_relationship = pd.DataFrame(columns=["copyset_id", "node_id"])
         next_relation_idx = 0
-        for copyset_id_min_1, nodes in enumerate(init_copysets_dedup):
+        for copyset_id_min_1, nodes in enumerate(init_copysets):
             for n in nodes:
                 self.copyset_node_relationship.loc[next_relation_idx] = \
                 {"copyset_id": copyset_id_min_1+1, "node_id":n}
                 next_relation_idx += 1
 
+    def random_generate_copysets(self, n, r, s):
+        node_list = list(range(1,n+1))
+        # n * (s/(n-1)) = #cs * r
+
+        double_minimum_copyset =2*math.ceil(n*s/(r*(r -1)))
+        repeated_node_list = node_list * math.ceil(double_minimum_copyset/len(node_list))
+
+        copysets = []
+
+        count = 0
+        for node in repeated_node_list:
+            rand_cs = set(random.sample(set(node_list) - {node}, k=r-1))
+            while rand_cs in copysets:
+                rand_cs = set(random.sample(set(node_list) - {node}, k=r-1))
+
+            copysets.append(rand_cs | {node})
+            count += 1
+            if count == double_minimum_copyset:
+                break
+        # Deduplication
+        init_copysets_dedup = []
+        for cs in copysets:
+            if cs not in init_copysets_dedup:
+                init_copysets_dedup.append(cs)
+
+        return init_copysets_dedup
+
+    """
+    Sort node list by individual scatter width and return list
+    """
+    def sort_scatter_list(self, l):
+        l.sort(key=cmp_to_key(lambda a, b: a[1] - b[1]))
+        return l
+
+    """
+    Get members in same copysets with node i (excluding node i)
+    (1,2,3) (1,5,6) -> get members of 1 -> [2,3,5,6]
+    """
+    def get_copysets_member(self, node):
+        members = set()
+        for sets in self.greedy_copysets:
+            if node in sets:
+                for n in sets:
+                    members.add(n)
+        if node in members:
+            members.remove(node)
+        return members
+
+    def greedy_generate_step(self):
+        def sorted_dict():
+          l = [(k, v) for k,v in self.scatter_dict.items()]
+          return self.sort_scatter_list(l)
+
+        def add_penalty(members):
+          for m in members:
+            self.scatter_dict[m] += 1
+
+        def remove_penalty(members):
+          for m in members:
+            self.scatter_dict[m] -= 1
+
+        scatter_list = sorted_dict()
+
+        # Generate till minimal SW satisfies requirement
+        while scatter_list[0][1] < self.s:
+            nodes = []
+
+            # Select first node
+            for i in range(self.n):
+                node_i = scatter_list[i][0]
+                nodes.append(node_i)
+                members_i = self.get_copysets_member(node_i)
+                # Add penalty to existing copysets members
+                add_penalty(members_i)
+
+                # Sort again
+                scatter_list_i = sorted_dict()
+                for j in range(self.n):
+                    # Node index could change
+                    if scatter_list_i[j][0] == node_i:
+                        continue
+
+                    node_j = scatter_list_i[j][0]
+                    nodes.append(node_j)
+                    members_j = self.get_copysets_member(node_j)
+                    add_penalty(members_j)
+
+                    scatter_list_j = sorted_dict()
+                    for k in range(self.n):
+                        if scatter_list_j[k][0]in (node_i, node_j):
+                            continue
+
+                        node_k = scatter_list_j[k][0]
+                        nodes.append(node_k)
+                        # Found new copysets
+                        if tuple(sorted(nodes)) in self.greedy_copysets:
+                            nodes.remove(nodes[-1])
+                            continue
+                        else:
+                            break
+
+                    # Remove panalty for current node
+                    remove_penalty(members_j)
+                    if len(nodes) == self.r:
+                        break
+                    else:
+                        nodes.remove(nodes[-1])
+
+                remove_penalty(members_i)
+                if len(nodes) == self.r:
+                    break
+                else:
+                    nodes.remove(nodes[-1])
+
+            for node in nodes:
+                members = self.get_copysets_member(node)
+                sw = len(nodes)-1
+                for n in nodes:
+                    if n in members:
+                        sw -= 1
+                self.scatter_dict[node] += sw
+
+            self.greedy_copysets.add(tuple(sorted(nodes)))
+            scatter_list = sorted_dict()
+
+    def greedy_generate_copysets(self, n, r, s):
+        self.scatter_dict = {x:0 for x in range(n)}
+        self.node_counter = self.n
+        self.greedy_copysets = set()
+        self.greedy_generate_step()
+
+        return [set(x) for x in self.greedy_copysets]
 
 
     def add_n_nodes(self, number_of_new_nodes):
@@ -395,93 +540,98 @@ def init_random_copyset(r, n, s):
 
 
 if __name__ == "__main__":
-    r = 5
-    s = 8
-    n =40
-    CS_3_20_4 = init_random_copyset(r, n, s)
-    # c = Cluster([[1,2,3],[2,3,4],[3,4,5],
-    #             [4,5,6],[5,6,1],[6,1,2],
-    #             [1,3,5],[2,4,6]])
-    # ff = open("CS_3_20_4.pkl", 'rb')
-    # CS_3_20_4 = pickle.load(ff)
-    c = Cluster(CS_3_20_4,r=r,s=s)
-    print(c.copyset_node_relationship)
-
-    print("init copyset_node_relationship size %d" % len(c.copyset_node_relationship))
-    print(c.cluster_nodes)
-    print(c.current_copysets)
-
-    print("\n\n\ncopyset_count_by_node")
-    print(c.copyset_count_by_node())
-
-    print("\n\n\nnode_count_by_copyset")
-    print(c.node_count_by_copyset())
-
-
-    print("\n\n\nscatter_width_by_node")
-    print(c.scatter_width_by_node())
-
-
-
-    d_node = [6, 4]
-    c.remove_nodes(d_node)
-
-    print("\n\n\nafter delete node %s, copyset_node_relationship" % repr(d_node))
-    print(c.cluster_nodes)
-    print(c.current_copysets)
-    print(len(c.copyset_node_relationship))
-    print(c.copyset_node_relationship)
-    print("\n\n\nnode_count_by_copyset")
-    print(c.node_count_by_copyset())
-
-
-
-
-    n = 4
-    c.add_n_nodes(n)
-    print("\n\n\nafter add %d new nodes,  copyset_node_relationship" % n)
-    print(c.cluster_nodes)
-    print(c.current_copysets)
-    print(len(c.copyset_node_relationship))
-    print(c.copyset_node_relationship)
-    print("\n\n\nnode_count_by_copyset")
-    print(c.node_count_by_copyset())
-
-
-    rm_cs = [7]
-    c.remove_copysets(rm_cs)
-    print("\n\n\nafter delete copyset %s, copyset_node_relationship" % repr(rm_cs))
-    print(c.cluster_nodes)
-    print(c.current_copysets)
-    print(len(c.copyset_node_relationship))
-    print(c.copyset_node_relationship)
-    print("\n\n\nnode_count_by_copyset")
-    print(c.node_count_by_copyset())
-
-
-
-    c.node_leave_copyset()
-
-    print("\nbefore merge: node_count_by_copyset")
-    print(c.node_count_by_copyset())
-    print(c.current_copysets)
-
-    c.merge_copyset()
-
-    print("\nafter merge: node_count_by_copyset")
-    print(c.node_count_by_copyset())
-
-    print(c.current_copysets)
-    print("\n\n\ncopyset_count_by_node")
-    print(c.copyset_count_by_node())
-
-    print("\n\n\nnode_count_by_copyset")
-    print(c.node_count_by_copyset())
-
-
-    print("\n\n\nscatter_width_by_node")
-    print(c.scatter_width_by_node())
-
-
-    print("bye~")
-
+    n = 9
+    r = 3
+    s = 4
+    c = Cluster(n, r, s, init = 'greedy')
+    print(c.greedy_copysets)
+#    r = 5
+#    s = 8
+#    n =40
+#    CS_3_20_4 = init_random_copyset(r, n, s)
+#    # c = Cluster([[1,2,3],[2,3,4],[3,4,5],
+#    #             [4,5,6],[5,6,1],[6,1,2],
+#    #             [1,3,5],[2,4,6]])
+#    # ff = open("CS_3_20_4.pkl", 'rb')
+#    # CS_3_20_4 = pickle.load(ff)
+#    c = Cluster(CS_3_20_4,r=r,s=s)
+#    print(c.copyset_node_relationship)
+#
+#    print("init copyset_node_relationship size %d" % len(c.copyset_node_relationship))
+#    print(c.cluster_nodes)
+#    print(c.current_copysets)
+#
+#    print("\n\n\ncopyset_count_by_node")
+#    print(c.copyset_count_by_node())
+#
+#    print("\n\n\nnode_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#
+#
+#    print("\n\n\nscatter_width_by_node")
+#    print(c.scatter_width_by_node())
+#
+#
+#
+#    d_node = [6, 4]
+#    c.remove_nodes(d_node)
+#
+#    print("\n\n\nafter delete node %s, copyset_node_relationship" % repr(d_node))
+#    print(c.cluster_nodes)
+#    print(c.current_copysets)
+#    print(len(c.copyset_node_relationship))
+#    print(c.copyset_node_relationship)
+#    print("\n\n\nnode_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#
+#
+#
+#
+#    n = 4
+#    c.add_n_nodes(n)
+#    print("\n\n\nafter add %d new nodes,  copyset_node_relationship" % n)
+#    print(c.cluster_nodes)
+#    print(c.current_copysets)
+#    print(len(c.copyset_node_relationship))
+#    print(c.copyset_node_relationship)
+#    print("\n\n\nnode_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#
+#
+#    rm_cs = [7]
+#    c.remove_copysets(rm_cs)
+#    print("\n\n\nafter delete copyset %s, copyset_node_relationship" % repr(rm_cs))
+#    print(c.cluster_nodes)
+#    print(c.current_copysets)
+#    print(len(c.copyset_node_relationship))
+#    print(c.copyset_node_relationship)
+#    print("\n\n\nnode_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#
+#
+#
+#    c.node_leave_copyset()
+#
+#    print("\nbefore merge: node_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#    print(c.current_copysets)
+#
+#    c.merge_copyset()
+#
+#    print("\nafter merge: node_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#
+#    print(c.current_copysets)
+#    print("\n\n\ncopyset_count_by_node")
+#    print(c.copyset_count_by_node())
+#
+#    print("\n\n\nnode_count_by_copyset")
+#    print(c.node_count_by_copyset())
+#
+#
+#    print("\n\n\nscatter_width_by_node")
+#    print(c.scatter_width_by_node())
+#
+#
+#    print("bye~")
+#

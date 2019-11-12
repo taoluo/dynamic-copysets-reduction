@@ -179,4 +179,3 @@ if __name__ == "__main__":
     gen.generate()
     gen.show()
     gen.show_sw()
-
