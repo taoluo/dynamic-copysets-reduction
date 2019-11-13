@@ -32,6 +32,6 @@ for i in range(steps):
 # plt.style.use("ggplot")
 plt.figure()
 plt.plot(x, copysets_numbers, 'r.')
-plt.xlabel("#nodes")
+plt.xlabel("time")
 plt.ylabel("#copysets")
 plt.savefig('dynamic_sim.png')

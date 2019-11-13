@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 
-N = 30
+N = 1500
 R = 3
 S = 4
 
-steps = [1]
+steps = [1,2,3,4,5,6]
 
 x = [[] for _ in range(len(steps))]
 scatter_widths = [[] for _ in range(len(steps))]
@@ -18,7 +18,7 @@ scatter_widths_base = []
 copysets_number_base = []
 
 for i, s in enumerate(steps):
-    iterations = int(np.ceil(20/s))
+    iterations = int(np.ceil(500/s))
     c = Cluster(N, R, S, init = 'greedy')
 
     for ii in range(iterations):
@@ -42,24 +42,26 @@ for i, s in enumerate(steps):
             copysets_number_base.append(len(c_base.greedy_copysets))
 
 plt.style.use("ggplot")
-plt.figure()
+fig, ax = plt.subplots()
 for i,s in enumerate(steps):
     label = "step" + str(s)
-    plt.plot(x[i-1], scatter_widths[i-1], label=label)
-plt.plot(x_base, scatter_widths_base, label="base")
-plt.xlabel("#nodes")
-plt.ylabel("mean scatter width")
-plt.legend(loc="upper left")
+    ax.plot(x[i-1], scatter_widths[i-1], label=label)
+ax.set_xlim(1500, 1000)
+ax.plot(x_base, scatter_widths_base, label="base")
+ax.set_xlabel("#nodes")
+ax.set_ylabel("mean scatter width")
+ax.legend(loc="upper left")
 plt.savefig('remove_simulation_sw.png')
 
 
 plt.style.use("ggplot")
-plt.figure()
+fig, ax = plt.subplots()
 for i,s in enumerate(steps):
     label = "step" + str(s)
-    plt.plot(x[i-1], copysets_number[i-1], label=label)
-plt.plot(x_base, copysets_number_base, label="base")
-plt.xlabel("#nodes")
-plt.ylabel("#copysets")
-plt.legend(loc="upper left")
+    ax.plot(x[i-1], copysets_number[i-1], label=label)
+ax.set_xlim(1500, 1000)
+ax.plot(x_base, copysets_number_base, label="base")
+ax.set_xlabel("#nodes")
+ax.set_ylabel("#copysets")
+ax.legend(loc="upper left")
 plt.savefig('remove_simulation_copysets.png')

@@ -350,6 +350,7 @@ class Cluster():
                     new_members = self.get_copysets_member(m)
                     self.scatter_dict[m] = len(new_members)
                 self.scatter_dict.pop(node)
+                self.cluster_nodes.remove(node)
                 self.n -= 1
 
                 old_copysets = self.greedy_copysets.copy()
@@ -391,6 +392,25 @@ class Cluster():
         self.copyset_node_relationship = self.copyset_node_relationship[ ~ self.copyset_node_relationship["copyset_id"].isin(copysets_to_remove)]
         # add remove from copyset
 
+    def get_copysets_number(self):
+        copysets_number = self.copyset_node_relationship.groupby("copyset_id").count()
+        return copysets_number.shape[0]
+
+    def get_and_set_greedy_copysets(self):
+        copysets = dict()
+        for index, row in self.copyset_node_relationship.iterrows():
+            cs_id = row["copyset_id"]
+            node_id = row["node_id"]
+            if cs_id in copysets:
+                copysets[cs_id].append(node_id)
+            else:
+                copysets[cs_id] = [node_id]
+        self.greedy_copysets = set(tuple(sorted(v)) for k,v in copysets.items())
+        self.scatter_dict = dict()
+        for n in self.cluster_nodes:
+            members = self.get_copysets_member(n)
+            self.scatter_dict[n] = len(members)
+        return copysets
 
     def get_copyset_count_by_node(self):
         """
@@ -401,7 +421,7 @@ class Cluster():
         # index is node id
         cs_cnt_by_nd.reset_index(inplace=True)
         cs_cnt_by_nd.rename({"copyset_id":"copyset_cnt"},axis=1,inplace=True)
-        return cs_cnt_by_nd
+        return cs_cnt_by_nd.sort_values('copyset_cnt', ascending=1)
 
     def get_node_count_by_copyset(self):
         """
@@ -415,7 +435,7 @@ class Cluster():
         # index is cs id
         nd_cnt_by_cs.reset_index(inplace=True)
         nd_cnt_by_cs.rename({"node_id":"node_cnt"},axis=1,inplace=True)
-        return nd_cnt_by_cs
+        return nd_cnt_by_cs.sort_values('node_cnt', ascending=1)
 
     def get_scatter_width_by_node(self):
         """
@@ -591,6 +611,7 @@ class Cluster():
         print("merge start")
         self.__do_migration(copyset_migration_mapping)
         self.dedup_copyset()
+        self.get_and_set_greedy_copysets()
 
     def __do_migration(self, migration_mapping):
         """
