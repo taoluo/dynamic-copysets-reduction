@@ -1,47 +1,65 @@
-from copysets_manager import CopysetsManager
-from scipy.special import comb
+from cluster_simu.cluster import Cluster
 import matplotlib.pyplot as plt
 import random
+import numpy as np
 
-print("Add and Remove steps vs Mean Scatter Width")
-steps = 500
-gen = CopysetsManager(100, 3, 4)
-gen.generate()
-res = []
+N = 30
+R = 3
+S = 4
 
-for i in range(steps):
-  res.append(gen.mean_sw())
-  diff = random.randint(1, 10)
-  gen.add_node(diff)
-  nodes = gen.get_node_indices()
-  indices = random.sample(nodes, k=diff)
-  for index in indices:
-    gen.remove_node(index)
+steps = [1]
+
+x = [[] for _ in range(len(steps))]
+scatter_widths = [[] for _ in range(len(steps))]
+copysets_number = [[] for _ in range(len(steps))]
+
+x_base = []
+scatter_widths_base = []
+copysets_number_base = []
+
+for i, s in enumerate(steps):
+    iterations = int(np.ceil(20/s))
+    c = Cluster(N, R, S, init = 'greedy')
+
+    for ii in range(iterations):
+        print("{}: {}".format(s, N - s * ii))
+        mean_sw = c.mean_sw()
+        curr_x = N - s * ii
+
+        x[i-1].append(curr_x)
+        scatter_widths[i-1].append(mean_sw)
+        copysets_number[i-1].append(len(c.greedy_copysets))
+
+        nodes = c.get_node_indices()
+        indices = random.sample(nodes, k=s)
+
+        c.remove_nodes(indices)
+
+        if i == len(steps) - 1:
+            c_base = Cluster(curr_x, R, S, init = 'greedy')
+            x_base.append(curr_x)
+            scatter_widths_base.append(c_base.mean_sw())
+            copysets_number_base.append(len(c_base.greedy_copysets))
+
+plt.style.use("ggplot")
+plt.figure()
+for i,s in enumerate(steps):
+    label = "step" + str(s)
+    plt.plot(x[i-1], scatter_widths[i-1], label=label)
+plt.plot(x_base, scatter_widths_base, label="base")
+plt.xlabel("#nodes")
+plt.ylabel("mean scatter width")
+plt.legend(loc="upper left")
+plt.savefig('remove_simulation_sw.png')
 
 
-plt.plot(range(steps), res, 'r.')
-plt.ylabel('Mean Scatter Width')
-plt.xlabel('time')
-plt.show()
-
-
-
-print("Data Loss Prob. vs Number of Nodes")
-x = []
-res = []
-
-for i in range(500, 3000, 50):
-  gen = CopysetsManager(i, 3, 4)
-  gen.generate()
-
-  l = gen.mean_sw()
-  ll = len(gen.copysets) / comb(i, 3)
-
-  x.append(i)
-  res.append(ll)
-
-
-plt.plot(x, res, 'b.')
-plt.ylabel('Data Loss Prob.')
-plt.xlabel('#Node')
-plt.show()
+plt.style.use("ggplot")
+plt.figure()
+for i,s in enumerate(steps):
+    label = "step" + str(s)
+    plt.plot(x[i-1], copysets_number[i-1], label=label)
+plt.plot(x_base, copysets_number_base, label="base")
+plt.xlabel("#nodes")
+plt.ylabel("#copysets")
+plt.legend(loc="upper left")
+plt.savefig('remove_simulation_copysets.png')
