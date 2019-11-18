@@ -1,8 +1,8 @@
-from greedy_manager import CopysetManager
-from scipy.special import comb
+from greedy_manager.copysets_manager import CopysetsManager
+import matplotlib.pyplot as plt
 import numpy as np
 
-experiment = [1]
+experiment = [1,2,3]
 
 x = [[] for _ in range(len(experiment))]
 res_sw = [[] for _ in range(len(experiment))]
@@ -18,7 +18,7 @@ res_sw_base = []
 res_base = []
 
 for i in experiment:
-  step = int(np.ceil(500/i))
+  step = int(np.ceil(2000/i))
   gen = CopysetsManager(start, 3, 4)
   gen.generate()
 
@@ -34,7 +34,6 @@ for i in experiment:
 
     x[i-1].append(start+ii*i)
 
-    clear_output(wait=True)
     print("{}: {}".format(i,start+ii*i))
     if i == experiment[-1] and base_test:
       gen_base = CopysetsManager(start+ii*i, 3, 4)
@@ -51,11 +50,10 @@ for i in experiment:
   plt.plot(x[i-1], res_sw[i-1], label=label)
 if base_test:
   plt.plot(x_base, res_sw_base, label="base")
-if batch_test:
-  plt.plot(x_batch, res_sw_batch, label="batch")
 plt.xlabel("#nodes")
 plt.ylabel("scatter width")
 plt.legend(loc="upper left")
+plt.savefig('add_node_simulation_sw.png')
 
 plt.style.use("ggplot")
 plt.figure()
@@ -64,8 +62,7 @@ for i in experiment:
   plt.plot(x[i-1], res[i-1], label=label)
 if base_test:
   plt.plot(x_base, res_base, label="base")
-if batch_test:
-  plt.plot(x_batch, res_batch, label="batch")
 plt.xlabel("#nodes")
 plt.ylabel("#copysets")
 plt.legend(loc="upper left")
+plt.savefig('add_node_simulation_copysets.png')

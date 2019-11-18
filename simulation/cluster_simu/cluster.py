@@ -36,6 +36,8 @@ class Cluster():
         self.node_counter = self.n
         self.greedy_copysets = set()
 
+        self.merge_cost = 0
+
         init_copysets = []
 
         if self.method == 'random':
@@ -468,7 +470,7 @@ class Cluster():
                 if DBG:
                     print("\noverscattered node: %d %d > %d" % (row["node_id"], row["copyset_cnt"], self.p))
                 all_copysets = self.copyset_node_relationship.loc[self.copyset_node_relationship["node_id"] == row["node_id"]]
-                rm_idx = random.sample(list(all_copysets.index), row["copyset_cnt"] - self.p)
+                rm_idx = random.sample(list(all_copysets.index), int(row["copyset_cnt"]) - self.p)
                 if DBG:
                     print("before remove table size %d" % self.copyset_node_relationship.shape[0])
                 self.copyset_node_relationship.drop(rm_idx,inplace=True)
@@ -608,11 +610,58 @@ class Cluster():
 
         print("merge plan ")
         pprint.pprint(copyset_migration_mapping)
+
+        estimate_cost_v1 = len({k:v for k,v in copyset_migration_mapping.items() if k != v})
+
         print("merge start")
         self.__do_migration(copyset_migration_mapping)
         self.dedup_copyset()
+
+        self.__remove_internal_duplicate()
+        self.__complete_halffull()
         self.get_and_set_greedy_copysets()
 
+        logging.debug("#copysets: %d, evaluation cost: %d", len(self.greedy_copysets), estimate_cost_v1)
+        self.merge_cost = estimate_cost_v1
+
+        old_copysets = self.greedy_copysets.copy()
+        self.greedy_generate_step()
+        diff_copysets = self.greedy_copysets - old_copysets
+        copyset_ids = []
+        node_ids = []
+        for copyset in diff_copysets:
+            new_copyset_id = self.copyset_seq_number()
+            copyset_ids.extend([new_copyset_id] * self.r)
+            for node in copyset:
+                node_ids.append(node)
+        new_nodes_df = pd.DataFrame({"copyset_id":copyset_ids, "node_id":node_ids})
+        self.copyset_node_relationship = self.copyset_node_relationship.append(new_nodes_df, ignore_index=True)
+        self.get_and_set_greedy_copysets()
+
+    def __remove_internal_duplicate(self):
+        node_count = self.get_node_count_by_copyset()
+        copyset_ids = node_count["copyset_id"].tolist()
+        for cs in copyset_ids:
+            this_copysets = self.copyset_node_relationship[self.copyset_node_relationship["copyset_id"] == cs]
+            is_duplicate = any(this_copysets["node_id"].duplicated())
+            if is_duplicate:
+                logging.info(">>>>>>{} has duplicates".format(this_copysets))
+                self.copyset_node_relationship = self.copyset_node_relationship[self.copyset_node_relationship["copyset_id"] != cs]
+
+    def __complete_halffull(self):
+        node_count = self.get_node_count_by_copyset()
+        halffull_copysets = node_count[node_count["node_cnt"] < self.r]
+        logging.debug(halffull_copysets)
+        for _, row in halffull_copysets.iterrows():
+            copyset_id = int(row["copyset_id"])
+            size = int(row["node_cnt"])
+            for _ in range(self.r - size):
+                rel_table = self.copyset_node_relationship
+                members = rel_table[rel_table["copyset_id"] == copyset_id]["node_id"].tolist()
+                for node in self.cluster_nodes:
+                    if node not in members:
+                        self.copyset_node_relationship = self.copyset_node_relationship.append({"copyset_id":copyset_id, "node_id":node}, ignore_index=True)
+                        break
     def __do_migration(self, migration_mapping):
         """
         do migration, change the copyset ID of some nodes based on migration_mapping
@@ -648,7 +697,7 @@ class Cluster():
                 mig_node_idx = set(mig_node.index) # all node to be migrated
                 for dest,node_size in dest_cs.items():
                     # BUG sample larger than nodesize
-                    mig_nodes_idx_sample = random.sample(mig_node_idx,node_size) # list
+                    mig_nodes_idx_sample = random.sample(mig_node_idx, int(node_size)) # list
 
                     current_dest_cs = set(self.copyset_node_relationship[self.copyset_node_relationship['copyset_id'] \
                                                                          == dest]["node_id"])
