@@ -43,8 +43,6 @@ class Cluster():
         if self.method == 'random':
             init_copysets = self.random_generate_copysets(n, r, s)
         elif self.method == 'greedy':
-            if self.r != 3:
-                raise NotImplementedError
             init_copysets = self.greedy_generate_copysets(n, r, s)
         else:
             logging.error('init {} not supported'.format(init))
@@ -182,58 +180,41 @@ class Cluster():
           for m in members:
             self.scatter_dict[m] -= 1
 
+        def select_node(r, scatter_list, nodes):
+            if r == 0:
+                if tuple(sorted(nodes)) in self.greedy_copysets:
+                    return False
+                else:
+                    return True
+            else:
+                for i in range(self.n):
+                    if scatter_list[i][0] in nodes:
+                        continue
+
+                    curr_node = scatter_list[i][0]
+                    nodes.append(curr_node)
+                    curr_members = self.get_copysets_member(curr_node)
+                    add_penalty(curr_members)
+                    sig = select_node(r-1, sorted_dict(), nodes)
+                    remove_penalty(curr_members)
+
+                    if sig:
+                        return True
+                    else:
+                        nodes.remove(nodes[-1])
+                logging.severe("no avaliable copyset")
+                return False
+
         scatter_list = sorted_dict()
 
         # Generate till minimal SW satisfies requirement
         while scatter_list[0][1] < self.s:
             nodes = []
 
-            # Select first node
-            for i in range(self.n):
-                node_i = scatter_list[i][0]
-                nodes.append(node_i)
-                members_i = self.get_copysets_member(node_i)
-                # Add penalty to existing copysets members
-                add_penalty(members_i)
+            sig = select_node(self.r, scatter_list, nodes)
 
-                # Sort again
-                scatter_list_i = sorted_dict()
-                for j in range(self.n):
-                    # Node index could change
-                    if scatter_list_i[j][0] == node_i:
-                        continue
-
-                    node_j = scatter_list_i[j][0]
-                    nodes.append(node_j)
-                    members_j = self.get_copysets_member(node_j)
-                    add_penalty(members_j)
-
-                    scatter_list_j = sorted_dict()
-                    for k in range(self.n):
-                        if scatter_list_j[k][0]in (node_i, node_j):
-                            continue
-
-                        node_k = scatter_list_j[k][0]
-                        nodes.append(node_k)
-                        # Found new copysets
-                        if tuple(sorted(nodes)) in self.greedy_copysets:
-                            nodes.remove(nodes[-1])
-                            continue
-                        else:
-                            break
-
-                    # Remove panalty for current node
-                    remove_penalty(members_j)
-                    if len(nodes) == self.r:
-                        break
-                    else:
-                        nodes.remove(nodes[-1])
-
-                remove_penalty(members_i)
-                if len(nodes) == self.r:
-                    break
-                else:
-                    nodes.remove(nodes[-1])
+            if sig == False:
+                logging.severe("should not happen")
 
             for node in nodes:
                 members = self.get_copysets_member(node)
