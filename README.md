@@ -13,4 +13,4 @@ Please see the project report PDF for more details.
 ## References
 [1] Cidon, A., Rumble, S. M., Stutsman, R., Katti, S., Ousterhout, J., & Rosenblum, M. (2013). Copysets: Reducing the Frequency of Data Loss in Cloud Storage. Proceedings of the 2013 USENIX Annual Technical Conference (USENIX ATC '13).
 
-[2] Cidon, A., et al. Tiered Replication: A Cost-effective Alternative to Full Cluster Geo-replication. (Note: Provide full citation if available, the project report references this)
+[2] Cidon, A., et al. Tiered Replication: A Cost-effective Alternative to Full Cluster Geo-replication.
